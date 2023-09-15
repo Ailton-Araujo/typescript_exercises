@@ -1,15 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 import { ObjectSchema } from "joi";
+import { unprocessableError } from "../errors/unprocessable";
 
-type ValidationMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => void;
-
-function validate(schema: ObjectSchema, type: "body") {
+export function validateBody(schema: ObjectSchema) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const { error } = schema.validate(req[type], {
+    const { error } = schema.validate(req.body, {
       abortEarly: false,
     });
 
@@ -19,14 +14,8 @@ function validate(schema: ObjectSchema, type: "body") {
         (e, index) =>
           (errorMessage += (index > 0 ? "and " : "") + e.message + " ")
       );
-      return res.status(422).send(errorMessage);
+      throw unprocessableError(errorMessage);
     }
     next();
   };
-}
-
-export default function validateSchema<T>(
-  schema: ObjectSchema<T>
-): ValidationMiddleware {
-  return validate(schema, "body");
 }
